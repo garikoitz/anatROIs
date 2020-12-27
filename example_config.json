@@ -1,0 +1,18 @@
+{
+ "config": {
+    "subject_id": "17_CAMINO_6835",
+    "reconall_options": false,
+    "hippocampal_subfields": false,
+    "brainstem_structures": false,
+    "thalamic_nuclei": false,
+    "cerebellum":true,
+    "mori":false,
+    "aparc2009":false,
+    "neuropythy_analysis": false,
+    "register_surfaces": false,
+    "convert_surfaces": false,
+    "convert_volumes": false,
+    "convert_stats": false,
+    "freesurfer_license": "mengluo1990@gmail.com 40915 *CLNd40FiYUKw FSfv2b7ZXo2J6"
+    }
+  }

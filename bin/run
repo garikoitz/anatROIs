@@ -5,8 +5,8 @@
 #
 # https://surfer.nmr.mgh.harvard.edu/fswiki/ReconAllOutputFiles
 
-GEAR=freesurfer-recon-all
-REPO=scitran
+GEAR=anatrois
+REPO=garikoitz
 CONTAINER="[${REPO}/$GEAR]"
 
 echo -e "$CONTAINER  Initiated"
@@ -46,7 +46,9 @@ export PATH=/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin:/opt/freesurfer/tktoo
 FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=${FLYWHEEL_BASE}/output
 INPUT_DIR=${FLYWHEEL_BASE}/input
-ANAT_DIR=${INPUT_DIR}/anatomical
+ANAT_DIR=${INPUT_DIR}/anat
+PRE_FS_DIR=${INPUT_DIR}/pre_fs
+MNIROIZIP_DIR=${INPUT_DIR}/mniroizip
 ANAT_DIR_2=${INPUT_DIR}/t1w_anatomical_2
 ANAT_DIR_3=${INPUT_DIR}/t1w_anatomical_3
 ANAT_DIR_4=${INPUT_DIR}/t1w_anatomical_4
@@ -106,89 +108,183 @@ WORK_DIR=${OUTPUT_DIR}/"${SUBJECT_ID}"
 export FS_LICENSE=${LICENSE_FILE}
 
 ###############################################################################
-# Check for anatomical NIfTI or DICOM archive
+# This is new in version 4.0.0
+# Now the container will have the option to include a folder or a zip file with FS run already
+# This zip file or folder is going to be optional. Therefore, if there is no zip, there should be the anatomical file
+# and it will run the whole FS. 
+
+# Additionnally, now we have a new mandatory file, and it is going to be a zip file with the MNI atlas file and the ROIs in 
+# MNI space. Now we will read and unzip those files. 
 
 # Despace filenames
 despacer "${ANAT_DIR}"
+despacer "${PRE_FS_DIR}"
+despacer "${MNIROIZIP_DIR}"
 
-# NIfTI input file
-ANATOMICAL=$(find ${ANAT_DIR}/* -name "*.nii*")
-
-# DICOM archive
-if [[ -z "${ANATOMICAL}" ]]; then
-  ANATOMICAL=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
-
-  # Handle Zip archive or uncompressed volume
-  if [[ "${ANATOMICAL}" == *.zip ]]; then
-    echo "$CONTAINER  Unzipping $ANATOMICAL"
-    DICOM_DIR="${ANAT_DIR}"/dicoms
-    mkdir ${DICOM_DIR}
-    unzip -q "${ANATOMICAL}" -d ${DICOM_DIR}
-
-    # Get the 'despaced' path to the first dicom file for input to recon-all
-    despacer "${DICOM_DIR}"
-    ANATOMICAL=$(find ${DICOM_DIR}/* -not -path '*/\.*' -type f | head -1)
-  fi
-
-  # Final check for anatomical file
-  if [[ -z "${ANATOMICAL}" ]]; then
-    echo "$CONTAINER  Anatomical input could not be found in $ANAT_DIR! Exiting (1)"
-    ls -lRa ${ANAT_DIR}
+# Check wich one of the two have been provided. If both, use the existing one. If none, error. 
+if [ -d "${ANAT_DIR}"] && [ -d "${PRE_FS_DIR}" ]; then
+    DO_FS="False"
+    echo "$CONTAINER Both folders ${ANAT_DIR} and ${PRE_FS_DIR} exist, we will use the pre-run FS by default. "
+fi
+if [ ! -d "${ANAT_DIR}"] && [ !  -d "${PRE_FS_DIR}" ]; then
+    echo "$CONTAINER No input folders ${ANAT_DIR} or ${PRE_FS_DIR} exist, add at least one for the container to run. "
     exit 1
-  fi
+fi
+if [ -d "${ANAT_DIR}"] && [ ! -d "${PRE_FS_DIR}" ]; then
+    echo "$CONTAINER  ${ANAT_DIR} exist but ${PRE_FS_DIR} not, We will run FS with the options ${RECON_ALL_OPTS}"
+    DO_FS="True"
+fi
+if [ ! -d "${ANAT_DIR}"] && [ -d "${PRE_FS_DIR}" ]; then
+    echo "$CONTAINER  ${ANAT_DIR} does not exist but ${PRE_FS_DIR} exists, we will use the existing FS run"
+    DO_FS="False"
 fi
 
-# Proccess additional anatomical inputs
-ADD_INPUTS=''
-ANAT_DIRS=$(echo -e $ANAT_DIR_2 $ANAT_DIR_3 $ANAT_DIR_4 $ANAT_DIR_5)
-for ad in $ANAT_DIRS; do
-  if [ -d ${ad} ]; then
-    despacer ${ad}
-    ANATOMICAL2=$(find ${ad}/* -name "*.nii*")
-    if [[ -f "$ANATOMICAL2" ]]; then
-      echo "Adding $ANATOMICAL2 to the processing stream..."
-      ADD_INPUTS=$ADD_INPUTS' -i '"$ANATOMICAL2"
+# IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
+# Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
+if [-d "${MNIROIZIP_DIR}"] 
+    echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
+    # Get the zip filename
+    MNIROIZIP=$(find ${MNIROIZIP_DIR}/* -name "*.zip")
+    # Delete the old     
+    rm -rf /flywheel/v0/templates/MNI_JHU_tracts_ROIs/*
+    # Unzip the new
+    unzip ${MNIROIZIP} -d /flywheel/v0/templates/MNI_JHU_tracts_ROIs/
+fi
+
+##############################################################################
+if [${DO_FS}=="True"]; then
+    # Check for anatomical NIfTI or DICOM archive
+    
+    # NIfTI input file
+    ANATOMICAL=$(find ${ANAT_DIR}/* -name "*.nii*")
+    
+    # DICOM archive
+    if [[ -z "${ANATOMICAL}" ]]; then
+      ANATOMICAL=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
+    
+      # Handle Zip archive or uncompressed volume
+      if [[ "${ANATOMICAL}" == *.zip ]]; then
+        echo "$CONTAINER  Unzipping $ANATOMICAL"
+        DICOM_DIR="${ANAT_DIR}"/dicoms
+        mkdir ${DICOM_DIR}
+        unzip -q "${ANATOMICAL}" -d ${DICOM_DIR}
+    
+        # Get the 'despaced' path to the first dicom file for input to recon-all
+        despacer "${DICOM_DIR}"
+        ANATOMICAL=$(find ${DICOM_DIR}/* -not -path '*/\.*' -type f | head -1)
+      fi
+    
+      # Final check for anatomical file
+      if [[ -z "${ANATOMICAL}" ]]; then
+        echo "$CONTAINER  Anatomical input could not be found in $ANAT_DIR! Exiting (1)"
+        ls -lRa ${ANAT_DIR}
+        exit 1
+      fi
     fi
-  fi
-done
-
-# T2 input file
-if [[ -d ${T2_DIR} ]]; then
-  despacer ${T2_DIR}
-  T2_ANAT=$(find ${T2_DIR}/* -name "*.nii*")
-  if [[ -f "$T2_ANAT" ]]; then
-    ADD_INPUTS=$ADD_INPUTS' -T2 '"$T2_ANAT"' -T2pial '
-  fi
-fi
-
-
-###############################################################################
-# Run Freesurfer-Recon-all
-if [[  ${RECON_ALL_OPTS} == "False" ]];then
-  echo -e "recon all is false, skipping it"
-  echo -e "checking if the old freesurfer-recon-all*.zip is there"
-  FS_ARCHIVE=$(find ${OUTPUT_DIR}/* -name "freesurfer-recon-all*.zip")
-  if [[ -f "$FS_ARCHIVE" ]]; then
-      echo -e "unzipping existing ${FS_ARCHIVE}"
-      unzip -oq "${FS_ARCHIVE}" -d "${OUTPUT_DIR}"
-  else
-      echo -e "$CONTAINER We cannot find existing .zip file"
-      echo "$CONTAINER  GEAR FAILED... Exiting(1)"
+    
+    # Proccess additional anatomical inputs
+    ADD_INPUTS=''
+    ANAT_DIRS=$(echo -e $ANAT_DIR_2 $ANAT_DIR_3 $ANAT_DIR_4 $ANAT_DIR_5)
+    for ad in $ANAT_DIRS; do
+      if [ -d ${ad} ]; then
+        despacer ${ad}
+        ANATOMICAL2=$(find ${ad}/* -name "*.nii*")
+        if [[ -f "$ANATOMICAL2" ]]; then
+          echo "Adding $ANATOMICAL2 to the processing stream..."
+          ADD_INPUTS=$ADD_INPUTS' -i '"$ANATOMICAL2"
+        fi
+      fi
+    done
+    
+    # T2 input file
+    if [[ -d ${T2_DIR} ]]; then
+      despacer ${T2_DIR}
+      T2_ANAT=$(find ${T2_DIR}/* -name "*.nii*")
+      if [[ -f "$T2_ANAT" ]]; then
+        ADD_INPUTS=$ADD_INPUTS' -T2 '"$T2_ANAT"' -T2pial '
+      fi
+    fi
+    
+    
+    ###############################################################################
+    # Run Freesurfer-Recon-all
+    if [[  ${RECON_ALL_OPTS} == "False" ]];then
+      echo -e "recon all is false, skipping it"
+      echo -e "checking if the old freesurfer-recon-all*.zip is there"
+      FS_ARCHIVE=$(find ${OUTPUT_DIR}/* -name "freesurfer-recon-all*.zip")
+      if [[ -f "$FS_ARCHIVE" ]]; then
+          echo -e "unzipping existing ${FS_ARCHIVE}"
+          unzip -oq "${FS_ARCHIVE}" -d "${OUTPUT_DIR}"
+      else
+          echo -e "$CONTAINER We cannot find existing .zip file"
+          echo "$CONTAINER  GEAR FAILED... Exiting(1)"
+          exit 1
+      fi
+      # echo -e "linking SUBJECTS_DIR directory to freesurfer"
+      # ln -sfn ${OUTPUT_DIR}/${SUBJECT_ID} ${SUBJECTS_DIR}/"${SUBJECT_ID}"
+    else 
+        # Run recon-all
+        echo -e "Running recon all..."
+        command=$(echo -e "time recon-all -i "${ANATOMICAL}" "${ADD_INPUTS}" -subjid "${SUBJECT_ID}" ${RECON_ALL_OPTS}")
+        echo -e "${command}"
+        eval $command
+    fi
+    if [[ $? != 0 ]]; then
+      echo "$CONTAINER  recon-all failure! Exiting (1)"
       exit 1
-  fi
-  # echo -e "linking SUBJECTS_DIR directory to freesurfer"
-  # ln -sfn ${OUTPUT_DIR}/${SUBJECT_ID} ${SUBJECTS_DIR}/"${SUBJECT_ID}"
-else 
-    # Run recon-all
-    echo -e "Running recon all..."
-    command=$(echo -e "time recon-all -i "${ANATOMICAL}" "${ADD_INPUTS}" -subjid "${SUBJECT_ID}" ${RECON_ALL_OPTS}")
-    echo -e "${command}"
-    eval $command
+    fi
+else
+    # We are not running FS, we need to find a zip file or a folder with a previous run
+    # If it is a zip file just search any zip file in the folder and unzip it. 
+    # If it is a folder, it will be a symbolic link to a FS folder, we are not going to copy anything. 
+    # Be careful with the file writing, as it will write in the FS folders. Then we copy to the output 
+    #   the files we are interested to the output and the rest will be zipped. 
+     
+    # NIfTI input file
+    PRE_FS_ZIP=$(find ${PRE_FS_DIR}/* -type f -name "*.zip")
+    PRE_FS_LNK=$(find ${PRE_FS_DIR}/* -type l -name "Sxxx")
+    if [ "${PRE_FS_ZIP}"] && [ "${PRE_FS_LNK}" ]; then
+        USE_ZIP="False"
+        echo "$CONTAINER Both folders ZIP and LINK found, we will use the LINK. "
+    fi
+    if [ ! "${PRE_FS_ZIP}"] && [  "${PRE_FS_LNK}" ]; then
+        echo "$CONTAINER Link to existing FS run found, it will be used. "
+        USE_ZIP="False"
+    fi
+    if [ "${PRE_FS_ZIP}"] && [ ! "${PRE_FS_LNK}" ]; then
+        echo "$CONTAINER   Zip with existing FS run found, We will run FS with the options ${RECON_ALL_OPTS}"
+        USE_ZIP="True"
+    fi
+    if [ ! "${PRE_FS_ZIP}"] && [ ! "${PRE_FS_LNK}" ]; then
+        echo "$CONTAINER  No link or zip found in ${PRE_FS_DIR}, exiting"
+        exit 1
+    fi
+    
+fi 
+
+# If use zip, unzip it, else check the link it is working well
+if [${USE_ZIP}=="True"]; then
+    echo "$CONTAINER Unzipping existing FS ZIP"
+    unzip ${PRE_FS_ZIP} -d ${OUTPUT_DIR}
+    # Check that the subject name in the zip is the same one as in the config file
+    if [! -d $OUTPUT_DIR/${SUBJECT_ID}]; then
+        echo "$CONTAINER The subject_id in config file ${SUBJECT_ID} is not the same as the folder name in the zip file"
+        exit 1
+    fi
+else
+    echo "$CONTAINER Checking that the link to the FS has the same name as in the config file..."
+    if [-d $OUTPUT_DIR/${SUBJECT_ID}]; then
+        echo "$CONTAINER  ... done. "
+    else
+        echo "$CONTAINER ... failed, exiting"
+        exit 1
+    fi
+    
 fi
-if [[ $? != 0 ]]; then
-  echo "$CONTAINER  recon-all failure! Exiting (1)"
-  exit 1
-fi
+
+
+
+
 
 ###############################################################################
 # Optional Segmentations

@@ -39,7 +39,10 @@ export FMRI_ANALYSIS_DIR=/opt/freesurfer/fsfast
 export PERL5LIB=/opt/freesurfer/mni/lib/perl5/5.8.5
 export MNI_PERL5LIB=/opt/freesurfer/mni/lib/perl5/5.8.5
 export XAPPLRESDIR=/opt/freesurfer/MCRv84/X11/app-defaults
-export PATH=/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH=/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin
+export PATH=$PATH:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin
+export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+export PATH=$PATH:/sbin:/bin
 ###############################################################################
 # Configure paths
 
@@ -55,8 +58,8 @@ ANAT_DIR_4=${INPUT_DIR}/t1w_anatomical_4
 ANAT_DIR_5=${INPUT_DIR}/t1w_anatomical_5
 T2_DIR=${INPUT_DIR}/t2w_anatomical
 LICENSE_FILE=${OUTPUT_DIR}/.license
-TEMPLATES=${FLYWHEEL_BASE}/templates
-MORI_DIR=${FLYWHEEL_BASE}/templates/MNI_JHU_tracts_ROIs
+TEMPLATES=${OUTPUT_DIR}/templates
+MORI_DIR=${TEMPLATES}/MNI_JHU_tracts_ROIs
 FS_DIR=${OUTPUT_DIR}/fs
 ROIs_DIR=${OUTPUT_DIR}/fs/ROIs
 export MCR_CACHE_ROOT=${OUTPUT_DIR}
@@ -118,41 +121,44 @@ export FS_LICENSE=${LICENSE_FILE}
 
 # Despace filenames
 despacer "${ANAT_DIR}"
-despacer "${PRE_FS_DIR}"
-despacer "${MNIROIZIP_DIR}"
+# despacer "${PRE_FS_DIR}"
+# despacer "${MNIROIZIP_DIR}"
 
 # Check wich one of the two have been provided. If both, use the existing one. If none, error. 
-if [ -d "${ANAT_DIR}"] && [ -d "${PRE_FS_DIR}" ]; then
+if [ -d ${ANAT_DIR} ] && [ -d ${PRE_FS_DIR} ]; then
     DO_FS="False"
     echo "$CONTAINER Both folders ${ANAT_DIR} and ${PRE_FS_DIR} exist, we will use the pre-run FS by default. "
 fi
-if [ ! -d "${ANAT_DIR}"] && [ !  -d "${PRE_FS_DIR}" ]; then
+if [ ! -d "${ANAT_DIR}" ] && [ !  -d "${PRE_FS_DIR}" ]; then
     echo "$CONTAINER No input folders ${ANAT_DIR} or ${PRE_FS_DIR} exist, add at least one for the container to run. "
     exit 1
 fi
-if [ -d "${ANAT_DIR}"] && [ ! -d "${PRE_FS_DIR}" ]; then
+if [ -d "${ANAT_DIR}" ] && [ ! -d "${PRE_FS_DIR}" ]; then
     echo "$CONTAINER  ${ANAT_DIR} exist but ${PRE_FS_DIR} not, We will run FS with the options ${RECON_ALL_OPTS}"
     DO_FS="True"
 fi
-if [ ! -d "${ANAT_DIR}"] && [ -d "${PRE_FS_DIR}" ]; then
+if [ ! -d "${ANAT_DIR}" ] && [ -d "${PRE_FS_DIR}" ]; then
     echo "$CONTAINER  ${ANAT_DIR} does not exist but ${PRE_FS_DIR} exists, we will use the existing FS run"
     DO_FS="False"
 fi
 
 # IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
 # Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
-if [-d "${MNIROIZIP_DIR}"] 
+mkdir ${TEMPLATES}
+if [ -d "${MNIROIZIP_DIR}" ]; then
     echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
     # Get the zip filename
     MNIROIZIP=$(find ${MNIROIZIP_DIR}/* -name "*.zip")
-    # Delete the old     
-    rm -rf /flywheel/v0/templates/MNI_JHU_tracts_ROIs/*
     # Unzip the new
-    unzip ${MNIROIZIP} -d /flywheel/v0/templates/MNI_JHU_tracts_ROIs/
+    unzip ${MNIROIZIP} -d ${MORI_DIR}
+    # Copy the files, not the folder
+    cp /flywheel/v0/templates/*.* ${TEMPLATES} 
+else
+    cp -r /flywheel/v0/templates/* ${TEMPLATES} 
 fi
 
 ##############################################################################
-if [${DO_FS}=="True"]; then
+if [ ${DO_FS}=="True" ]; then
     # Check for anatomical NIfTI or DICOM archive
     
     # NIfTI input file
@@ -205,7 +211,6 @@ if [${DO_FS}=="True"]; then
       fi
     fi
     
-    
     ###############################################################################
     # Run Freesurfer-Recon-all
     if [[  ${RECON_ALL_OPTS} == "False" ]];then
@@ -242,49 +247,43 @@ else
      
     # NIfTI input file
     PRE_FS_ZIP=$(find ${PRE_FS_DIR}/* -type f -name "*.zip")
-    PRE_FS_LNK=$(find ${PRE_FS_DIR}/* -type l -name "Sxxx")
-    if [ "${PRE_FS_ZIP}"] && [ "${PRE_FS_LNK}" ]; then
+    PRE_FS_LNK=$(find ${PRE_FS_DIR}/* -name ${SUBJECT_ID})
+    if [ "${PRE_FS_ZIP}" ] && [ "${PRE_FS_LNK}" ]; then
         USE_ZIP="False"
         echo "$CONTAINER Both folders ZIP and LINK found, we will use the LINK. "
     fi
-    if [ ! "${PRE_FS_ZIP}"] && [  "${PRE_FS_LNK}" ]; then
+    if [ ! "${PRE_FS_ZIP}" ] && [  "${PRE_FS_LNK}" ]; then
         echo "$CONTAINER Link to existing FS run found, it will be used. "
         USE_ZIP="False"
     fi
-    if [ "${PRE_FS_ZIP}"] && [ ! "${PRE_FS_LNK}" ]; then
+    if [ "${PRE_FS_ZIP}" ] && [ ! "${PRE_FS_LNK}" ]; then
         echo "$CONTAINER   Zip with existing FS run found, We will run FS with the options ${RECON_ALL_OPTS}"
         USE_ZIP="True"
     fi
-    if [ ! "${PRE_FS_ZIP}"] && [ ! "${PRE_FS_LNK}" ]; then
+    if [ ! "${PRE_FS_ZIP}" ] && [ ! "${PRE_FS_LNK}" ]; then
         echo "$CONTAINER  No link or zip found in ${PRE_FS_DIR}, exiting"
         exit 1
     fi
-    
-fi 
-
-# If use zip, unzip it, else check the link it is working well
-if [${USE_ZIP}=="True"]; then
-    echo "$CONTAINER Unzipping existing FS ZIP"
-    unzip ${PRE_FS_ZIP} -d ${OUTPUT_DIR}
-    # Check that the subject name in the zip is the same one as in the config file
-    if [! -d $OUTPUT_DIR/${SUBJECT_ID}]; then
-        echo "$CONTAINER The subject_id in config file ${SUBJECT_ID} is not the same as the folder name in the zip file"
-        exit 1
-    fi
-else
-    echo "$CONTAINER Checking that the link to the FS has the same name as in the config file..."
-    if [-d $OUTPUT_DIR/${SUBJECT_ID}]; then
-        echo "$CONTAINER  ... done. "
+    # If use zip, unzip it, else check the link it is working well
+    if [ ${USE_ZIP}=="True" ]; then
+        echo "$CONTAINER Unzipping existing FS ZIP"
+        unzip ${PRE_FS_ZIP} -d ${OUTPUT_DIR}
+        # Check that the subject name in the zip is the same one as in the config file
+        if [ ! -d $OUTPUT_DIR/${SUBJECT_ID} ]; then
+            echo "$CONTAINER The subject_id in config file ${SUBJECT_ID} is not the same as the folder name in the zip file"
+            exit 1
+        fi
     else
-        echo "$CONTAINER ... failed, exiting"
-        exit 1
+        echo "$CONTAINER Checking that the link to the FS has the same name as in the config file..."
+        ln -s $PRE_FS_LNK $OUTPUT_DIR/${SUBJECT_ID}
+        if [ -d $OUTPUT_DIR/${SUBJECT_ID} ]; then
+            echo "$CONTAINER  ... done. "
+        else
+            echo "$CONTAINER ... failed, exiting"
+            exit 1
+        fi
     fi
-    
-fi
-
-
-
-
+fi 
 
 ###############################################################################
 # Optional Segmentations
@@ -308,11 +307,11 @@ if [[ ${CEREBELLUM} == "True" ]]; then
   antsRegistrationSyN.sh -d 3 -o ${MRI_DIR}/ants                                \
         -f ${MRI_DIR}/brainmask.nii.gz -m ${MORI_DIR}/FSL_MNI152_FreeSurferConformed_1mm.nii.gz
   # apply both affine and nonlinear transofrmation
-  antsApplyTransforms -d 3                                                         \
-        -i ${TEMPLATES}/Cerebellum-MNIsegment.nii.gz                               \
-        -r ${MRI_DIR}/brainmask.nii.gz                                            \
+  antsApplyTransforms -d 3                                                      \
+        -i ${TEMPLATES}/Cerebellum-MNIsegment.nii.gz                            \
+        -r ${MRI_DIR}/brainmask.nii.gz                                          \
         -n GenericLabel[Linear]                                                 \
-         -t ${MRI_DIR}/ants1Warp.nii.gz                                            \
+        -t ${MRI_DIR}/ants1Warp.nii.gz                                          \
         -t ${MRI_DIR}/ants0GenericAffine.mat                                    \
         -o ${MRI_DIR}/Cerebellum-MNIsegment_ind.nii.gz
   # copy it to output dir
@@ -327,18 +326,18 @@ if [[ ${MORI} == "True" ]]; then
     # Create binary mask of brainmask.mgz and MNI_152
     mri_convert  ${MRI_DIR}/brainmask.mgz ${MRI_DIR}/brainmask.nii.gz
     # calculate the transformation
-    antsRegistrationSyN.sh -d 3 -o ${MRI_DIR}/ants                                \
+    antsRegistrationSyN.sh -d 3 -o ${MRI_DIR}/ants                          \
         -f ${MRI_DIR}/brainmask.nii.gz -m ${MORI_DIR}/FSL_MNI152_FreeSurferConformed_1mm.nii.gz
     # apply both affine and nonlinear transofrmation
   fi
   for ROI in `ls ${MORI_DIR}/*`; do
     ROIname=$(basename -- "$ROI"); ROIname="${ROIname%.nii.gz}"  
-    antsApplyTransforms -d 3                                                         \
+    antsApplyTransforms -d 3                                                \
         -i ${MORI_DIR}/${ROIname}.nii.gz                                    \
-        -r ${MRI_DIR}/brainmask.nii.gz                                            \
-        -n GenericLabel[Linear]                                                 \
-         -t ${MRI_DIR}/ants1Warp.nii.gz                                            \
-        -t ${MRI_DIR}/ants0GenericAffine.mat                                    \
+        -r ${MRI_DIR}/brainmask.nii.gz                                      \
+        -n GenericLabel[Linear]                                             \
+        -t ${MRI_DIR}/ants1Warp.nii.gz                                      \
+        -t ${MRI_DIR}/ants0GenericAffine.mat                                \
         -o ${MRI_DIR}/MORI_${ROIname}.nii.gz
     
     mri_binarize --min 0.1 --i ${MRI_DIR}/MORI_${ROIname}.nii.gz \

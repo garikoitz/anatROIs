@@ -120,24 +120,24 @@ export FS_LICENSE=${LICENSE_FILE}
 # MNI space. Now we will read and unzip those files. 
 
 # Despace filenames
-despacer "${ANAT_DIR}"
+# despacer "${ANAT_DIR}"
 # despacer "${PRE_FS_DIR}"
 # despacer "${MNIROIZIP_DIR}"
 
 # Check wich one of the two have been provided. If both, use the existing one. If none, error. 
-if [ -d ${ANAT_DIR} ] && [ -d ${PRE_FS_DIR} ]; then
+if [[ -d ${ANAT_DIR}  &&  -d ${PRE_FS_DIR} ]]; then
     DO_FS="False"
     echo "$CONTAINER Both folders ${ANAT_DIR} and ${PRE_FS_DIR} exist, we will use the pre-run FS by default. "
 fi
-if [ ! -d "${ANAT_DIR}" ] && [ !  -d "${PRE_FS_DIR}" ]; then
+if [[ ! -d "${ANAT_DIR}"  &&  !  -d "${PRE_FS_DIR}" ]]; then
     echo "$CONTAINER No input folders ${ANAT_DIR} or ${PRE_FS_DIR} exist, add at least one for the container to run. "
     exit 1
 fi
-if [ -d "${ANAT_DIR}" ] && [ ! -d "${PRE_FS_DIR}" ]; then
+if [[ -d "${ANAT_DIR}"  &&  ! -d "${PRE_FS_DIR}" ]]; then
     echo "$CONTAINER  ${ANAT_DIR} exist but ${PRE_FS_DIR} not, We will run FS with the options ${RECON_ALL_OPTS}"
     DO_FS="True"
 fi
-if [ ! -d "${ANAT_DIR}" ] && [ -d "${PRE_FS_DIR}" ]; then
+if [[ ! -d "${ANAT_DIR}" && -d "${PRE_FS_DIR}" ]]; then
     echo "$CONTAINER  ${ANAT_DIR} does not exist but ${PRE_FS_DIR} exists, we will use the existing FS run"
     DO_FS="False"
 fi
@@ -145,7 +145,7 @@ fi
 # IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
 # Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
 mkdir ${TEMPLATES}
-if [ -d "${MNIROIZIP_DIR}" ]; then
+if [[ -d "${MNIROIZIP_DIR}" ]]; then
     echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
     # Get the zip filename
     MNIROIZIP=$(find ${MNIROIZIP_DIR}/* -name "*.zip")
@@ -158,7 +158,7 @@ else
 fi
 
 ##############################################################################
-if [ ${DO_FS}=="True" ]; then
+if [[ ${DO_FS} == "True" ]]; then
     # Check for anatomical NIfTI or DICOM archive
     
     # NIfTI input file
@@ -192,7 +192,7 @@ if [ ${DO_FS}=="True" ]; then
     ADD_INPUTS=''
     ANAT_DIRS=$(echo -e $ANAT_DIR_2 $ANAT_DIR_3 $ANAT_DIR_4 $ANAT_DIR_5)
     for ad in $ANAT_DIRS; do
-      if [ -d ${ad} ]; then
+      if [[ -d ${ad} ]]; then
         despacer ${ad}
         ANATOMICAL2=$(find ${ad}/* -name "*.nii*")
         if [[ -f "$ANATOMICAL2" ]]; then
@@ -248,35 +248,38 @@ else
     # NIfTI input file
     PRE_FS_ZIP=$(find ${PRE_FS_DIR}/* -type f -name "*.zip")
     PRE_FS_LNK=$(find ${PRE_FS_DIR}/* -name ${SUBJECT_ID})
-    if [ "${PRE_FS_ZIP}" ] && [ "${PRE_FS_LNK}" ]; then
+    echo "$CONTAINER PRE_FS_ZIP is $PRE_FS_ZIP"
+    echo "$CONTAINER PRE_FS_LNK is $PRE_FS_LNK"
+    
+    if [[ "${PRE_FS_ZIP}"  &&  "${PRE_FS_LNK}" ]]; then
         USE_ZIP="False"
         echo "$CONTAINER Both folders ZIP and LINK found, we will use the LINK. "
     fi
-    if [ ! "${PRE_FS_ZIP}" ] && [  "${PRE_FS_LNK}" ]; then
+    if [[ ! "${PRE_FS_ZIP}"  &&   "${PRE_FS_LNK}" ]]; then
         echo "$CONTAINER Link to existing FS run found, it will be used. "
         USE_ZIP="False"
     fi
-    if [ "${PRE_FS_ZIP}" ] && [ ! "${PRE_FS_LNK}" ]; then
+    if [[ "${PRE_FS_ZIP}"  &&  ! "${PRE_FS_LNK}" ]]; then
         echo "$CONTAINER   Zip with existing FS run found, We will run FS with the options ${RECON_ALL_OPTS}"
         USE_ZIP="True"
     fi
-    if [ ! "${PRE_FS_ZIP}" ] && [ ! "${PRE_FS_LNK}" ]; then
+    if [[ ! "${PRE_FS_ZIP}"  &&  ! "${PRE_FS_LNK}" ]]; then
         echo "$CONTAINER  No link or zip found in ${PRE_FS_DIR}, exiting"
         exit 1
     fi
     # If use zip, unzip it, else check the link it is working well
-    if [ ${USE_ZIP}=="True" ]; then
+    if [[ ${USE_ZIP} == "True" ]]; then
         echo "$CONTAINER Unzipping existing FS ZIP"
         unzip ${PRE_FS_ZIP} -d ${OUTPUT_DIR}
         # Check that the subject name in the zip is the same one as in the config file
-        if [ ! -d $OUTPUT_DIR/${SUBJECT_ID} ]; then
+        if [[ ! -d $OUTPUT_DIR/${SUBJECT_ID} ]]; then
             echo "$CONTAINER The subject_id in config file ${SUBJECT_ID} is not the same as the folder name in the zip file"
             exit 1
         fi
     else
         echo "$CONTAINER Checking that the link to the FS has the same name as in the config file..."
         ln -s $PRE_FS_LNK $OUTPUT_DIR/${SUBJECT_ID}
-        if [ -d $OUTPUT_DIR/${SUBJECT_ID} ]; then
+        if [[ -d $OUTPUT_DIR/${SUBJECT_ID} ]]; then
             echo "$CONTAINER  ... done. "
         else
             echo "$CONTAINER ... failed, exiting"

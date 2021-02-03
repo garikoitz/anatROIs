@@ -1,161 +1,209 @@
-#! /bin/bash
-#
-# Run freesurfer-recon-all Gear
-# Built to flywheel-v0 spec.
-#
-# https://surfer.nmr.mgh.harvard.edu/fswiki/ReconAllOutputFiles
+	#! /bin/bash
+	#
+	# Run freesurfer-recon-all Gear
+	# Built to flywheel-v0 spec.
+	#
+	# https://surfer.nmr.mgh.harvard.edu/fswiki/ReconAllOutputFiles
 
-GEAR=anatrois
-REPO=garikoitz
-CONTAINER="[${REPO}/$GEAR]"
+	GEAR=anatrois
+	REPO=garikoitz
+	CONTAINER="[${REPO}/$GEAR]"
 
-echo -e "$CONTAINER  Initiated"
-set -e
-###############################################################################
-# Utilities
+	echo -e "$CONTAINER  Initiated"
+	set -e
+	###############################################################################
+	# Utilities
 
-# Remove the spaces in directory and filenames recursively
-despacer () {
-  find "$1" -depth -name "* *" -execdir rename 's/ /_/g' "{}" \;
-}
+	# Remove the spaces in directory and filenames recursively
+	despacer () {
+	  find "$1" -depth -name "* *" -execdir rename 's/ /_/g' "{}" \;
+	}
 
-###############################################################################
-# Configure Freesurfer and MCR ENV
+	###############################################################################
+	# Configure Freesurfer and MCR ENV
 
-export MCR_CACHE_FOLDER_NAME=.mcrCache8.4
+	export MCR_CACHE_FOLDER_NAME=.mcrCache8.4
 
-export OS=Linux
-export FS_OVERRIDE=0
-export FIX_VERTEX_AREA=
-export FSF_OUTPUT_FORMAT=nii.gz
-export MNI_DIR=/opt/freesurfer/mni
-export LOCAL_DIR=/opt/freesurfer/local
-export FREESURFER_HOME=/opt/freesurfer
-export FSFAST_HOME=/opt/freesurfer/fsfast
-export MINC_BIN_DIR=/opt/freesurfer/mni/bin
-export MINC_LIB_DIR=/opt/freesurfer/mni/lib
-export MNI_DATAPATH=/opt/freesurfer/mni/data
-export FMRI_ANALYSIS_DIR=/opt/freesurfer/fsfast
-export PERL5LIB=/opt/freesurfer/mni/lib/perl5/5.8.5
-export MNI_PERL5LIB=/opt/freesurfer/mni/lib/perl5/5.8.5
-export XAPPLRESDIR=/opt/freesurfer/MCRv84/X11/app-defaults
-export PATH=/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin
-export PATH=$PATH:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin
-export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-export PATH=$PATH:/sbin:/bin
-###############################################################################
-# Configure paths
+	export OS=Linux
+	export FS_OVERRIDE=0
+	export FIX_VERTEX_AREA=
+	export FSF_OUTPUT_FORMAT=nii.gz
+	export MNI_DIR=/opt/freesurfer/mni
+	export LOCAL_DIR=/opt/freesurfer/local
+	export FREESURFER_HOME=/opt/freesurfer
+	export FSFAST_HOME=/opt/freesurfer/fsfast
+	export MINC_BIN_DIR=/opt/freesurfer/mni/bin
+	export MINC_LIB_DIR=/opt/freesurfer/mni/lib
+	export MNI_DATAPATH=/opt/freesurfer/mni/data
+	export FMRI_ANALYSIS_DIR=/opt/freesurfer/fsfast
+	export PERL5LIB=/opt/freesurfer/mni/lib/perl5/5.8.5
+	export MNI_PERL5LIB=/opt/freesurfer/mni/lib/perl5/5.8.5
+	export XAPPLRESDIR=/opt/freesurfer/MCRv84/X11/app-defaults
+	export PATH=/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin
+	export PATH=$PATH:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin
+	export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+	export PATH=$PATH:/sbin:/bin
+	###############################################################################
+	# Configure paths
 
-FLYWHEEL_BASE=/flywheel/v0
-OUTPUT_DIR=${FLYWHEEL_BASE}/output
-INPUT_DIR=${FLYWHEEL_BASE}/input
-ANAT_DIR=${INPUT_DIR}/anat
-PRE_FS_DIR=${INPUT_DIR}/pre_fs
-MNIROIZIP_DIR=${INPUT_DIR}/mniroizip
-ANAT_DIR_2=${INPUT_DIR}/t1w_anatomical_2
-ANAT_DIR_3=${INPUT_DIR}/t1w_anatomical_3
-ANAT_DIR_4=${INPUT_DIR}/t1w_anatomical_4
-ANAT_DIR_5=${INPUT_DIR}/t1w_anatomical_5
-T2_DIR=${INPUT_DIR}/t2w_anatomical
-LICENSE_FILE=${OUTPUT_DIR}/.license
-TEMPLATES=${OUTPUT_DIR}/templates
-MORI_DIR=${TEMPLATES}/MNI_JHU_tracts_ROIs
-FS_DIR=${OUTPUT_DIR}/fs
-ROIs_DIR=${OUTPUT_DIR}/fs/ROIs
-export MCR_CACHE_ROOT=${OUTPUT_DIR}
-# Source FreeSurferEnv.sh then set subjects_dir
-/bin/bash -c 'source $FREESURFER_HOME/FreeSurferEnv.sh &>/dev/null'
+	FLYWHEEL_BASE=/flywheel/v0
+	OUTPUT_DIR=${FLYWHEEL_BASE}/output
+	INPUT_DIR=${FLYWHEEL_BASE}/input
+	ANAT_DIR=${INPUT_DIR}/anat
+	PRE_FS_DIR=${INPUT_DIR}/pre_fs
+	MNIROIZIP_DIR=${INPUT_DIR}/mniroizip
+	ANNOTFILE_DIR=${INPUT_DIR}/annotfile
+	ANAT_DIR_2=${INPUT_DIR}/t1w_anatomical_2
+	ANAT_DIR_3=${INPUT_DIR}/t1w_anatomical_3
+	ANAT_DIR_4=${INPUT_DIR}/t1w_anatomical_4
+	ANAT_DIR_5=${INPUT_DIR}/t1w_anatomical_5
+	T2_DIR=${INPUT_DIR}/t2w_anatomical
+	LICENSE_FILE=${OUTPUT_DIR}/.license
+	TEMPLATES=${OUTPUT_DIR}/templates
+	MORI_DIR=${TEMPLATES}/MNI_JHU_tracts_ROIs
+	FS_DIR=${OUTPUT_DIR}/fs
+	ROIs_DIR=${OUTPUT_DIR}/fs/ROIs
+	export MCR_CACHE_ROOT=${OUTPUT_DIR}
+	# Source FreeSurferEnv.sh then set subjects_dir
+	/bin/bash -c 'source $FREESURFER_HOME/FreeSurferEnv.sh &>/dev/null'
 
-export SUBJECTS_DIR=${OUTPUT_DIR}
+	export SUBJECTS_DIR=${OUTPUT_DIR}
 
-# cp -r $FREESURFER_HOME/subjects/fsaverage_sym $SUBJECTS_DIR/
+	# cp -r $FREESURFER_HOME/subjects/fsaverage_sym $SUBJECTS_DIR/
 
 
-###############################################################################
-# Parse Configuration and Set Options
+	###############################################################################
+	# Parse Configuration and Set Options
 
-CONFIG_FILE=${FLYWHEEL_BASE}/config.json
-MANIFEST_FILE=${FLYWHEEL_BASE}/manifest.json
+	CONFIG_FILE=${FLYWHEEL_BASE}/config.json
+	MANIFEST_FILE=${FLYWHEEL_BASE}/manifest.json
 
-if [[ ! -f ${CONFIG_FILE} ]]; then
-  CONFIG_FILE=${MANIFEST_FILE}
-fi
+	if [[ ! -f ${CONFIG_FILE} ]]; then
+	  CONFIG_FILE=${MANIFEST_FILE}
+	fi
 
-# If the license file is empty then create from config inputs
-if [[ ! -f ${LICENSE_FILE} ]]; then
-  LICENSE=$(${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -l)
-  if [[ -z $LICENSE ]]; then
-    echo "NO LICENSE INFORMATION FOUND! Exiting(1)"
-    exit 1
-  fi
-  echo -e ${LICENSE} > ${LICENSE_FILE}
-fi
+	# If the license file is empty then create from config inputs
+	if [[ ! -f ${LICENSE_FILE} ]]; then
+	  LICENSE=$(${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -l)
+	  if [[ -z $LICENSE ]]; then
+	    echo "NO LICENSE INFORMATION FOUND! Exiting(1)"
+	    exit 1
+	  fi
+	  echo -e ${LICENSE} > ${LICENSE_FILE}
+	fi
 
-SUBJECT_ID=$(echo `${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -i` | sed 's/ /_/g')
-RECON_ALL_OPTS=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -o`
-CONVERT_SURFACES=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -s`
-CONVERT_VOLUMES=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -n`
-ASEG_CSV=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -a`
-HIPPOCAMPUS=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -c`
-BRAINSTEM=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -b`
-THALAMUS=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -t`
-HCP=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -g`
-NEUROPYTHY=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -p`
-REGISTER_SURFACES=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -r`
-CEREBELLUM=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -e`
-MORI=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -m` 
-APARC2009=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -aparc2009`
-# Make and link the subject's directory
-WORK_DIR=${OUTPUT_DIR}/"${SUBJECT_ID}"
-#ln -sfn ${SUBJECTS_DIR}/"${SUBJECT_ID}" ${WORK_DIR}
-export FS_LICENSE=${LICENSE_FILE}
+	SUBJECT_ID=$(echo `${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -i` | sed 's/ /_/g')
+	RECON_ALL_OPTS=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -o`
+	CONVERT_SURFACES=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -s`
+	CONVERT_VOLUMES=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -n`
+	ASEG_CSV=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -a`
+	HIPPOCAMPUS=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -c`
+	BRAINSTEM=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -b`
+	THALAMUS=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -t`
+	HCP=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -g`
+	NEUROPYTHY=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -p`
+	REGISTER_SURFACES=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -r`
+	CEREBELLUM=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -e`
+	MORI=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -m` 
+	APARC2009=`${FLYWHEEL_BASE}/parse_config.py --json_file=${CONFIG_FILE} -aparc2009`
+	# Make and link the subject's directory
+	WORK_DIR=${OUTPUT_DIR}/"${SUBJECT_ID}"
+	#ln -sfn ${SUBJECTS_DIR}/"${SUBJECT_ID}" ${WORK_DIR}
+	export FS_LICENSE=${LICENSE_FILE}
 
-###############################################################################
-# This is new in version 4.0.0
-# Now the container will have the option to include a folder or a zip file with FS run already
-# This zip file or folder is going to be optional. Therefore, if there is no zip, there should be the anatomical file
-# and it will run the whole FS. 
+	MRI_DIR=${SUBJECTS_DIR}/"${SUBJECT_ID}"/mri
+	if [[ ! -d $FS_DIR ]]; then
+	  mkdir ${FS_DIR}
+	fi
 
-# Additionnally, now we have a new mandatory file, and it is going to be a zip file with the MNI atlas file and the ROIs in 
-# MNI space. Now we will read and unzip those files. 
+	if [[ ! -d $ROIs_DIR ]]; then
+	  mkdir ${ROIs_DIR}
+	fi
 
-# Despace filenames
-# despacer "${ANAT_DIR}"
-# despacer "${PRE_FS_DIR}"
-# despacer "${MNIROIZIP_DIR}"
+	###############################################################################
+	# This is new in version 4.0.0
+	# Now the container will have the option to include a folder or a zip file with FS run already
+	# This zip file or folder is going to be optional. Therefore, if there is no zip, there should be the anatomical file
+	# and it will run the whole FS. 
 
-# Check wich one of the two have been provided. If both, use the existing one. If none, error. 
-if [[ -d ${ANAT_DIR}  &&  -d ${PRE_FS_DIR} ]]; then
-    DO_FS="False"
-    echo "$CONTAINER Both folders ${ANAT_DIR} and ${PRE_FS_DIR} exist, we will use the pre-run FS by default. "
-fi
-if [[ ! -d "${ANAT_DIR}"  &&  !  -d "${PRE_FS_DIR}" ]]; then
-    echo "$CONTAINER No input folders ${ANAT_DIR} or ${PRE_FS_DIR} exist, add at least one for the container to run. "
-    exit 1
-fi
-if [[ -d "${ANAT_DIR}"  &&  ! -d "${PRE_FS_DIR}" ]]; then
-    echo "$CONTAINER  ${ANAT_DIR} exist but ${PRE_FS_DIR} not, We will run FS with the options ${RECON_ALL_OPTS}"
-    DO_FS="True"
-fi
-if [[ ! -d "${ANAT_DIR}" && -d "${PRE_FS_DIR}" ]]; then
-    echo "$CONTAINER  ${ANAT_DIR} does not exist but ${PRE_FS_DIR} exists, we will use the existing FS run"
-    DO_FS="False"
-fi
+	# Additionnally, now we have a new mandatory file, and it is going to be a zip file with the MNI atlas file and the ROIs in 
+	# MNI space. Now we will read and unzip those files. 
 
-# IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
-# Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
-mkdir ${TEMPLATES}
-if [[ -d "${MNIROIZIP_DIR}" ]]; then
-    echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
-    # Get the zip filename
-    MNIROIZIP=$(find ${MNIROIZIP_DIR}/* -name "*.zip")
-    # Unzip the new
-    unzip ${MNIROIZIP} -d ${MORI_DIR}
-    # Copy the files, not the folder
-    cp /flywheel/v0/templates/*.* ${TEMPLATES} 
-else
-    cp -r /flywheel/v0/templates/* ${TEMPLATES} 
-fi
+	# Despace filenames
+	# despacer "${ANAT_DIR}"
+	# despacer "${PRE_FS_DIR}"
+	# despacer "${MNIROIZIP_DIR}"
+
+	# Check wich one of the two have been provided. If both, use the existing one. If none, error. 
+	if [[ -d ${ANAT_DIR}  &&  -d ${PRE_FS_DIR} ]]; then
+	    DO_FS="False"
+	    echo "$CONTAINER Both folders ${ANAT_DIR} and ${PRE_FS_DIR} exist, we will use the pre-run FS by default. "
+	fi
+	if [[ ! -d "${ANAT_DIR}"  &&  !  -d "${PRE_FS_DIR}" ]]; then
+	    echo "$CONTAINER No input folders ${ANAT_DIR} or ${PRE_FS_DIR} exist, add at least one for the container to run. "
+	    exit 1
+	fi
+	if [[ -d "${ANAT_DIR}"  &&  ! -d "${PRE_FS_DIR}" ]]; then
+	    echo "$CONTAINER  ${ANAT_DIR} exist but ${PRE_FS_DIR} not, We will run FS with the options ${RECON_ALL_OPTS}"
+	    DO_FS="True"
+	fi
+	if [[ ! -d "${ANAT_DIR}" && -d "${PRE_FS_DIR}" ]]; then
+	    echo "$CONTAINER  ${ANAT_DIR} does not exist but ${PRE_FS_DIR} exists, we will use the existing FS run"
+	    DO_FS="False"
+	fi
+
+	# Check if the annotation have been provided, if yes, we will convert to individual space annot and volume labels
+	DO_ANNOT="False"
+	if [[ -d "${ANNOTFILE_DIR}" ]]; then
+	    echo "$CONTAINER ${ANNOTFILE_DIR} exists, checking if the file exists now"
+
+	    # Get the zip filename
+	    ANNOTFILE=$(find ${ANNOTFILE_DIR}/* -name "*.zip")
+	    
+	    if [[ -f "${ANNOTFILE}" ]]; then
+	        echo "$CONTAINER ${ANNOTFILE} exists, it will create individual ROIs out of it"
+	        DO_ANNOT="True"
+	    fi
+	fi
+
+
+
+
+
+	# IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
+	# Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
+	mkdir ${TEMPLATES}
+	if [[ -d "${MNIROIZIP_DIR}" ]]; then
+	    echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
+	    # Get the zip filename
+	    MNIROIZIP=$(find ${MNIROIZIP_DIR}/* -name "*.zip")
+	    # Unzip the new
+	    unzip ${MNIROIZIP} -d ${MORI_DIR}
+	    # Copy the files, not the folder
+	    cp /flywheel/v0/templates/*.* ${TEMPLATES} 
+	else
+	    cp -r /flywheel/v0/templates/* ${TEMPLATES} 
+	fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##############################################################################
 if [[ ${DO_FS} == "True" ]]; then
@@ -246,7 +294,7 @@ else
     #   the files we are interested to the output and the rest will be zipped. 
      
     # NIfTI input file
-    PRE_FS_ZIP=$(find ${PRE_FS_DIR}/* -type f -name "*.zip")
+    PRE_FS_ZIP=$(find ${PRE_FS_DIR}/* -name "*.zip")
     PRE_FS_LNK=$(find ${PRE_FS_DIR}/* -name ${SUBJECT_ID})
     echo "$CONTAINER PRE_FS_ZIP is $PRE_FS_ZIP"
     echo "$CONTAINER PRE_FS_LNK is $PRE_FS_LNK"
@@ -288,18 +336,27 @@ else
     fi
 fi 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ###############################################################################
 # Optional Segmentations
-
-MRI_DIR=${SUBJECTS_DIR}/"${SUBJECT_ID}"/mri
-
-if [[ ! -d $FS_DIR ]]; then
-  mkdir ${FS_DIR}
-fi
-
-if [[ ! -d $ROIs_DIR ]]; then
-  mkdir ${ROIs_DIR}
-fi
 
 # Segmentation of Cerebellum 
 if [[ ${CEREBELLUM} == "True" ]]; then
@@ -530,6 +587,88 @@ if [[ $CONVERT_VOLUMES == "True" ]]; then
     mri_convert -i "${MRI_DIR}"/$i -o ${FS_DIR}/`basename $i .mgz`.nii.gz
   done
 fi
+
+# Do the annotation conversion now
+if [[ ${DO_ANNOT} == "True" ]]; then
+    # Unzip the annot file first
+    ANNOTDIRS=${OUTPUT_DIR}/annotations
+    # Create the folder and unzip 
+    mkdir ${ANNOTDIRS}
+    unzip $ANNOTFILE -d ${ANNOTDIRS}
+
+    # Labeldir in the subject
+    labeldir=${OUTPUT_DIR}/${SUBJECT_ID}/label/
+    labeldirtmp=${OUTPUT_DIR}/${SUBJECT_ID}/label/tmp
+    mkdir ${labeldirtmp}
+
+    # Create symbolink link to fsaverage to the output folder
+    fsaveragelink=${OUTPUT_DIR}/fsaverage
+    ln -s $FREESURFER_HOME/subjects/fsaverage $fsaveragelink
+
+    
+    # Convert the annot from fsaverage to the individual subject space
+    for annot in `ls ${ANNOTDIRS}/*`; do
+        ANNOTname=$(basename -- "$annot"); ANNOTname="${ANNOTname%.annot}"
+        
+        # Obtain hemi
+        hemi=${ANNOTname:0:2}
+
+        
+        # Launch the first command to convert to individual subject space  
+        mri_surf2surf --srcsubject fsaverage --trgsubject ${SUBJECT_ID} --hemi ${hemi} \
+                      --sval-annot ${ANNOTDIRS}/${ANNOTname}.annot --tval ${labeldir}/${ANNOTname}.annot
+        
+        # # Extract the individual labels
+        # # --labelbase ${ANNOTname}
+        mri_annotation2label --subject ${SUBJECT_ID} --hemi ${hemi}  \
+                             --annotation ${labeldir}/${ANNOTname}.annot --outdir $labeldirtmp
+        
+        # Convert from label to volumetric label (add this to fill GM, otherwise just pial voxels -proj frac 0 1 0.01)
+        for label in `ls ${labeldirtmp}/*`; do
+            LABELname=$(basename -- "$label"); LABELname="${LABELname%.label}"
+            mri_label2vol --label ${labeldirtmp}/${LABELname}.label --subject ${SUBJECT_ID} \
+                                --hemi  ${hemi} --identity \
+                                --temp ${OUTPUT_DIR}/${SUBJECT_ID}/mri/T1.mgz \
+                                --o ${ROIs_DIR}/${LABELname}.nii.gz
+            # Move the label file to the label dir to store
+            mv ${labeldirtmp}/${LABELname}.label ${labeldir}/${LABELname}.label
+            # Do this to fill the holes and make it fit exactly inside the boundaries of GM (we control dilation later to be dMRI WM ROIs)
+            mri_binarize --dilate 1 --erode 1 --i ${ROIs_DIR}/${LABELname}.nii.gz \
+                         --o ${ROIs_DIR}/${LABELname}.nii.gz --min 1
+            mris_calc -o ${ROIs_DIR}/${LABELname}.nii.gz ${ROIs_DIR}/${LABELname}.nii.gz \
+                          mul ${OUTPUT_DIR}/${SUBJECT_ID}/mri/${hemi}.ribbon.mgz    
+        done
+    done
+    # Remove the symbolic link 
+    unlink $fsaveragelink
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##############################################################################
 # Write ROIs separately into individual files

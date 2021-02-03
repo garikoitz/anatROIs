@@ -53,6 +53,16 @@
         ]
       }
     }, 
+    "annotfile": {
+      "description": "zip with annot files in fsaverage space",
+      "base": "file",
+      "optional": true,
+      "type": {
+        "enum": [
+          "zip"
+        ]
+      }
+    }, 
     "t1w_anatomical_2": {
       "description": "Additional anatomical NIfTI file",
       "base": "file",

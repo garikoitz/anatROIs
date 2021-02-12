@@ -1,6 +1,6 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/scitran/freesurfer-recon-all.svg)](https://hub.docker.com/r/garikoitz/freesurfer-ROI/)
 [![Docker Stars](https://img.shields.io/docker/stars/scitran/freesurfer-recon-all.svg)](https://hub.docker.com/r/garikoitz/freesurfer-ROI/)
-# garikoitz/freesurfer-ROI
+# garikoitz/anatROIs
 
 
 * You *MUST* read and agree to the license agreement and [register with MGH before you use the software](https://surfer.nmr.mgh.harvard.edu/registration.html).

@@ -149,6 +149,13 @@ RUN echo "export PATH=/usr/bin/:$PATH" >> ~/.bashrc
 ## setup fixAllSegmentations 
 COPY compiled/fixAllSegmentations /usr/bin/fixAllSegmentations
 RUN chmod +x /usr/bin/fixAllSegmentations
+# There is a check in the sh for wmparc and other files, which are not working in infantFS, 
+# I copied the file and removed those lines as said by Eugenio and checking the whole thing now
+COPY compiled/segmentThalamicNuclei.sh /opt/freesurfer/bin/segmentThalamicNuclei.sh
+
+
+
+
 
 # Copy and configure run script and metadata code
 COPY bin/run \

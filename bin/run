@@ -534,16 +534,27 @@ fi
 if [[ $CONVERT_VOLUMES == "True" ]]; then
 
   MRI_DIR=${SUBJECTS_DIR}/"${SUBJECT_ID}"/mri
-  mri_mgz_files='aparc+aseg.mgz
-                 aparc.a2009s+aseg.mgz
-                 brainmask.mgz
-                 lh.ribbon.mgz
-                 rh.ribbon.mgz
-                 ribbon.mgz
-                 aseg.mgz
-                 orig.mgz
-                 T1.mgz'
+  if [[ -f MRI_DIR/aparc.a2009s+aseg.mgz  ]]
+      mri_mgz_files='aparc+aseg.mgz
+                     aparc.a2009s+aseg.mgz
+                     brainmask.mgz
+                     lh.ribbon.mgz
+                     rh.ribbon.mgz
+                     ribbon.mgz
+                     aseg.mgz
+                     orig.mgz
+                     T1.mgz'
+  else
+      mri_mgz_files='aparc+aseg.mgz
+                     brainmask.mgz
+                     lh.ribbon.mgz
+                     rh.ribbon.mgz
+                     ribbon.mgz
+                     aseg.mgz
+                     orig.mgz
+                     T1.mgz'
 
+  fi
   if [[ ${HIPPOCAMPUS} == "True" ]]; then
     # Create a symbolic link to the development version of this output specified
     # by ${SUFFIX} in 

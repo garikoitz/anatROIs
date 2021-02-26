@@ -534,7 +534,7 @@ fi
 if [[ $CONVERT_VOLUMES == "True" ]]; then
 
   MRI_DIR=${SUBJECTS_DIR}/"${SUBJECT_ID}"/mri
-  if [[ -f MRI_DIR/aparc.a2009s+aseg.mgz  ]]
+  if [[ -f ${MRI_DIR}/aparc.a2009s+aseg.mgz  ]]; then
       mri_mgz_files='aparc+aseg.mgz
                      aparc.a2009s+aseg.mgz
                      brainmask.mgz

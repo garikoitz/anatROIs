@@ -281,6 +281,10 @@ if [[ ${DO_FS} == "True" ]]; then
         command=$(echo -e "time recon-all -i "${ANATOMICAL}" "${ADD_INPUTS}" -subjid "${SUBJECT_ID}" ${RECON_ALL_OPTS}")
         echo -e "${command}"
         eval $command
+        
+        # Remove the symbolic link
+        unlink ${OUTPUT_DIR}/fsaverage
+
     fi
     if [[ $? != 0 ]]; then
       echo "$CONTAINER  recon-all failure! Exiting (1)"
@@ -614,8 +618,17 @@ if [[ ${DO_ANNOT} == "True" ]]; then
 
     # Create symbolink link to fsaverage to the output folder
     fsaveragelink=${OUTPUT_DIR}/fsaverage
-    ln -s $FREESURFER_HOME/subjects/fsaverage $fsaveragelink
-
+    # ln -s $FREESURFER_HOME/subjects/fsaverage $fsaveragelink
+    # Error thrown with ln, try copying, singularity problem, not docker
+    # Check if the symbolic link exists, if so, unlink it
+    if [[ -L ${fsaveragelink} && -d ${fsaveragelink} ]]; then
+        echo "Unlinking existing link to fsaverage"
+        unlink ${fsaveragelink}
+    fi
+    if [[ ! -d ${fsaveragelink}  ]]; then
+        echo "Copying fsaverage"
+        cp -r $FREESURFER_HOME/subjects/fsaverage ${OUTPUT_DIR}
+    fi
     
     # Convert the annot from fsaverage to the individual subject space
     for annot in `ls ${ANNOTDIRS}/*`; do
@@ -651,7 +664,9 @@ if [[ ${DO_ANNOT} == "True" ]]; then
         done
     done
     # Remove the symbolic link 
-    unlink $fsaveragelink
+    # unlink $fsaveragelink
+    # Delete fsaverage folder copy
+    rm -rf ${fsaveragelink}
 fi
 
 
@@ -822,6 +837,7 @@ rm -rf $OUTPUT_DIR/fs
 
 # Delete the tmp MCR folder, it breaks FW and wastes space
 rm -rf $OUTPUT_DIR/$MCR_CACHE_FOLDER_NAME
+
 
 ###############################################################################
 # FINISH

@@ -614,7 +614,9 @@ if [[ ${DO_ANNOT} == "True" ]]; then
     # Labeldir in the subject
     labeldir=${OUTPUT_DIR}/${SUBJECT_ID}/label/
     labeldirtmp=${OUTPUT_DIR}/${SUBJECT_ID}/label/tmp
-    mkdir ${labeldirtmp}
+    if [[ ! -d ${labeldirtmp} ]]; then
+        mkdir ${labeldirtmp}
+    fi
 
     # Create symbolink link to fsaverage to the output folder
     fsaveragelink=${OUTPUT_DIR}/fsaverage

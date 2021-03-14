@@ -700,7 +700,9 @@ fi
 
 ##############################################################################
 # Write ROIs separately into individual files
-cp ${OUTPUT_DIR}/aparc+aseg.nii.gz   ${FS_DIR}/aparc+aseg.nii.gz
+if [[ -f  ${OUTPUT_DIR}/aparc+aseg.nii.gz ]]; then
+    cp ${OUTPUT_DIR}/aparc+aseg.nii.gz   ${FS_DIR}/aparc+aseg.nii.gz
+fi
 
 # Cerebellum
 if [[ ${CEREBELLUM} == "True" ]]; then

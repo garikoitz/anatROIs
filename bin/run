@@ -1,4 +1,4 @@
-	#! /bin/bash
+	#!/bin/bash
 	#
 	# Run freesurfer-recon-all Gear
 	# Built to flywheel-v0 spec.
@@ -725,6 +725,8 @@ if [[ ${NEUROPYTHY} == "True" ]]; then
     cp ${OUTPUT_DIR}/benson14_varea.nii.gz  ${FS_DIR}/benson14_varea.nii.gz
     ${FLYWHEEL_BASE}/separateROIs.py -benV ${FS_DIR}/benson14_varea.nii.gz
 
+    cp ${OUTPUT_DIR}/wang15_mplbl.nii.gz  ${FS_DIR}/wang15_mplbl.nii.gz
+    ${FLYWHEEL_BASE}/separateROIs.py -benW ${FS_DIR}/wang15_mplbl.nii.gz
 fi
 
 if [[ ${APARC2009} == "True" ]]; then

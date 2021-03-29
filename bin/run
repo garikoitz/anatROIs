@@ -172,6 +172,9 @@
 
 	# IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
 	# Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
+    if [[ -d ${TEMPLATES} ]]; then
+        rm -rf ${TEMPLATES}
+    fi
 	mkdir ${TEMPLATES}
 	if [[ -d "${MNIROIZIP_DIR}" ]]; then
 	    echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
@@ -754,7 +757,9 @@ fi
 if [[ ${NEUROPYTHY} == "True" ]]; then
     cp ${OUTPUT_DIR}/benson14_varea.nii.gz  ${FS_DIR}/benson14_varea.nii.gz
     ${FLYWHEEL_BASE}/separateROIs.py -benV ${FS_DIR}/benson14_varea.nii.gz
-
+ 
+    cp ${OUTPUT_DIR}/wang15_mplbl.nii.gz  ${FS_DIR}/wang15_mplbl.nii.gz
+    ${FLYWHEEL_BASE}/separateROIs.py -benW ${FS_DIR}/wang15_mplbl.nii.gz
 fi
 
 if [[ ${APARC2009} == "True" ]]; then

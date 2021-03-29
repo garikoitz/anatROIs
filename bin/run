@@ -172,6 +172,9 @@
 
 	# IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
 	# Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
+    if [[ -d ${TEMPLATES} ]]; then
+        rm -rf ${TEMPLATES}
+    fi
 	mkdir ${TEMPLATES}
 	if [[ -d "${MNIROIZIP_DIR}" ]]; then
 	    echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"

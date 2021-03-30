@@ -161,6 +161,7 @@ COPY compiled/segmentThalamicNuclei.sh /opt/freesurfer/bin/segmentThalamicNuclei
 COPY bin/run \
       bin/parse_config.py \
 	  bin/separateROIs.py \
+	  bin/fix_aseg_if_infant.py \
       bin/srf2obj \
       manifest.json \
       ${FLYWHEEL}/
@@ -170,6 +171,7 @@ RUN chmod +x \
       ${FLYWHEEL}/run \
       ${FLYWHEEL}/srf2obj \
       ${FLYWHEEL}/parse_config.py \
+      ${FLYWHEEL}/fix_aseg_if_infant.py \
 	  ${FLYWHEEL}/separateROIs.py
 WORKDIR ${FLYWHEEL}
 # Run the run.sh script on entry.

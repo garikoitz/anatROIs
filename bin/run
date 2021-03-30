@@ -1,4 +1,4 @@
-	#! /bin/bash
+	#!/bin/bash
 	#
 	# Run freesurfer-recon-all Gear
 	# Built to flywheel-v0 spec.
@@ -172,6 +172,7 @@
 
 	# IF MNIROIZIP is provided, then delete the previous folder and substitute with this one
 	# Do it right here, do not use variables, it should be transpartent to the run file because the other roi-s come from Dockerfile
+    
 	mkdir ${TEMPLATES}
 	if [[ -d "${MNIROIZIP_DIR}" ]]; then
 	    echo "$CONTAINER  ${MNIROIZIP_DIR} have been provided and it will substitute the default one"
@@ -534,6 +535,12 @@ if [[ $CONVERT_SURFACES == "True" ]]; then
 
 fi
 
+
+
+
+# Just in case, convert always volumes, we need some later
+CONVERT_VOLUMES="True"
+
 # Convert select volumes in subject/mri to nifti:
 if [[ $CONVERT_VOLUMES == "True" ]]; then
 
@@ -549,6 +556,7 @@ if [[ $CONVERT_VOLUMES == "True" ]]; then
                      orig.mgz
                      T1.mgz'
   else
+      # It must be infant, not all files are there:
       mri_mgz_files='aparc+aseg.mgz
                      brainmask.mgz
                      lh.ribbon.mgz
@@ -557,6 +565,8 @@ if [[ $CONVERT_VOLUMES == "True" ]]; then
                      aseg.mgz
                      orig.mgz
                      T1.mgz'
+      # and aseg is different, change it, required for Thalamic Segmentation
+      ${FLYWHEEL_BASE}/fix_aseg_if_infant.py -mriDir ${MRI_DIR}
 
   fi
   if [[ ${HIPPOCAMPUS} == "True" ]]; then

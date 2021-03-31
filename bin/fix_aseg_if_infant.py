@@ -12,11 +12,13 @@ if __name__ == '__main__':
     import os 
     from scipy import ndimage
 
+    mriDir = args.mriDir
+
     # Backup the old aseg
     os.rename(os.path.join(mriDir,'aseg.mgz'),os.path.join(mriDir,'aseg_old.mgz'))
 
     # Read the old one
-    img = nib.load(os.path.join(args.mriDir,'aseg_old.mgz'))
+    img = nib.load(os.path.join(mriDir,'aseg_old.mgz'))
 
     # Extract the data
     data = img.get_fdata()

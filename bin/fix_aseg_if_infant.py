@@ -1,12 +1,8 @@
-#!/usr/bin/env python2.7
-# Create the two hemispheres
+#!/usr/bin/python2.7
+# #!/usr/bin/env python2.7
 
-if __name__ == '__main__':
-    import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument('-mriDir', type=str,  help='Path to fs mri dir')
-    args = ap.parse_args()
 
+def fix_aseg_if_infant(args):
     import numpy as np
     import nibabel as nib
     import os 
@@ -41,4 +37,14 @@ if __name__ == '__main__':
     # save the file
     newimg = nib.Nifti1Image(data, img.affine, img.header)
     nib.save(newimg, os.path.join(mriDir,'aseg.mgz'))
+   
+
+if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-mriDir', type=str,  help='Path to fs mri dir')
+    args = ap.parse_args()
+    fix_aseg_if_infant(args)
+
+
 

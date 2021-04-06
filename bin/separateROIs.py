@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.7
+#!/usr/bin/env python2.7
 # Create the two hemispheres
 
 def createHemiMaskFromAseg(asegFile):
@@ -128,6 +128,43 @@ def segBensonVarea():
             sp.call(cmdstr, shell = True)
             os.remove(roiname)
 
+def segBensonWang():
+    import os
+    import subprocess as sp
+    dic_ben = {1:'wang_V1v',2:'wang_V1d',3:'wang_V2v',4:'wang_V2d',5:'wang_V3v',6:'wang_V3d',7:'wang_hV4',8:'wang_VO1',9:'wang_VO2',10:'wang_PHC1',11:'wang_PHC2',12:'wang_MST',13:'wang_hMT',14:'wang_LO2',15:'wang_LO1',16:'wang_V3b',17:'wang_V3a',18:'wang_IPS0',19:'wang_IPS1',20:'wang_IPS2',21:'wang_IPS3',22:'wang_IPS4',23:'wang_IPS5',24:'wang_SPL1',25:'wang_FEF'}
+    (head, tail) = os.path.split(args.benW)
+ 
+    for index in dic_ben:
+        # dilstr = ['', '_dil-1', '_dil-2']; diloption = ['', '-dilate 1', '-dilate 2']
+        dilstr = ['']; diloption = ['']
+        for i in range(len(dilstr)):
+            roiname = os.path.join(head, 'ROIs', str(dic_ben[index] +dilstr[i] + '.nii.gz'))
+            # extract benson varea
+            
+            cmdstr = str('mri_extract_label ' + diloption[i] + args.benW + ' ' + 
+                str(index) + ' ' + roiname )
+            print(cmdstr)
+            a = sp.call(cmdstr, shell=True)
+            if a == 1:
+                if os.path.exists(roiname):
+                    os.remove(roiname)
+                continue
+            # mask left and right hemisphere
+            # extract the left
+            head_tail = os.path.split(roiname)
+            lhname = str(head_tail[0] + '/Left-' + head_tail[1])
+            rhname = str(head_tail[0] + '/Right-' + head_tail[1])
+            # extract the left
+            cmdstr = str('mri_binarize --mask ' + os.path.join(head, 'lh.AsegMask.nii.gz') +
+                         ' --min 0.1 --i ' + roiname + ' --o '+ lhname)
+            print(cmdstr)    
+            sp.call(cmdstr, shell = True)
+            # extract the right
+            cmdstr = str('mri_binarize --mask ' + os.path.join(head, 'rh.AsegMask.nii.gz') +
+                        ' --min 0.1 --i ' + roiname + ' --o '+ rhname)
+            print(cmdstr)    
+            sp.call(cmdstr, shell = True)
+            os.remove(roiname)
 
 def segCB():
     # extract Cerebellum
@@ -289,6 +326,14 @@ def separateROIs(args):
         if not os.path.isfile(str(head + '/lh.AsegMask.nii.gz')):
             createHemiMaskFromAseg(aseg) 
         segBensonVarea()
+    if args.benW:
+        print('benW')
+        (head, tail) = os.path.split(args.benW)
+        # if Aseg do not have left and right mask, generate them
+        aseg = os.path.join(head,'aparc+aseg.nii.gz')
+        if not os.path.isfile(str(head + '/lh.AsegMask.nii.gz')):
+            createHemiMaskFromAseg(aseg) 
+        segBensonWang()
     if args.cb:
         print('CB')
         (head, tail) = os.path.split(args.cb)
@@ -324,6 +369,7 @@ if __name__ == '__main__':
     ap.add_argument('-hcpLUT', type=str,  help='Full path to HCP Atlas LUT')
     ap.add_argument('-aparc2009', type=str, help='Full path to aparc.2009.nii.gz')
     ap.add_argument('-benV', type=str, help='Full path to benson Varea image')
+    ap.add_argument('-benW', type=str, help='Full path to benson Wang image')
     ap.add_argument('-cb', type=str, help='Full path to Bucker cerebellm image')
     ap.add_argument('-bs', type=str, help='Full path to brainstem image')
     ap.add_argument('-hipp', type=str, help='path contains left and right hippocampus and amygdala image')

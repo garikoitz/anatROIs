@@ -103,9 +103,16 @@ RUN curl -#L https://github.com/noahbenson/neuropythy/archive/$neuropythyCOMMIT.
 WORKDIR /usr/lib/
 RUN mv neuropythy-$neuropythyCOMMIT neuropythy
 RUN chmod -R +rwx /usr/lib/neuropythy
-RUN pip install --upgrade pip && \
-	pip2.7 install numpy && \
-    pip2.7 install -e /usr/lib/neuropythy
+# RUN pip install --upgrade pip && \
+#	pip2.7 install numpy && \
+#	pip2.7 install nibabel && \
+#	pip2.7 install scipy && \
+#   pip2.7 install -e /usr/lib/neuropythy
+RUN wget  https://bootstrap.pypa.io/pip/2.7/get-pip.py && python get-pip.py
+RUN pip2 install numpy && \
+	pip2 install nibabel && \
+	pip2 install scipy && \
+    pip2 install -e /usr/lib/neuropythy
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
@@ -149,11 +156,19 @@ RUN echo "export PATH=/usr/bin/:$PATH" >> ~/.bashrc
 ## setup fixAllSegmentations 
 COPY compiled/fixAllSegmentations /usr/bin/fixAllSegmentations
 RUN chmod +x /usr/bin/fixAllSegmentations
+# There is a check in the sh for wmparc and other files, which are not working in infantFS, 
+# I copied the file and removed those lines as said by Eugenio and checking the whole thing now
+COPY compiled/segmentThalamicNuclei.sh /opt/freesurfer/bin/segmentThalamicNuclei.sh
+
+
+
+
 
 # Copy and configure run script and metadata code
 COPY bin/run \
       bin/parse_config.py \
 	  bin/separateROIs.py \
+	  bin/fix_aseg_if_infant.py \
       bin/srf2obj \
       manifest.json \
       ${FLYWHEEL}/
@@ -161,9 +176,11 @@ COPY bin/run \
 # Handle file properties for execution
 RUN chmod +x \
       ${FLYWHEEL}/run \
-      ${FLYWHEEL}/srf2obj \
       ${FLYWHEEL}/parse_config.py \
-	  ${FLYWHEEL}/separateROIs.py
+	  ${FLYWHEEL}/separateROIs.py \
+      ${FLYWHEEL}/fix_aseg_if_infant.py \
+      ${FLYWHEEL}/srf2obj \
+      ${FLYWHEEL}/manifest.json
 WORKDIR ${FLYWHEEL}
 # Run the run.sh script on entry.
 ENTRYPOINT ["/flywheel/v0/run"]

@@ -340,7 +340,7 @@ else
         fi
     fi
 fi 
-
+# FREESURFER ENDS HERE
 
 
 
@@ -473,19 +473,33 @@ if [[ ${BRAINSTEM} == "True" ]]; then
 fi
 
 # Thalamic Nuclei
-if [[ ${THALAMUS} == "True" ]]; then
 
+# For testing
+# mv ${MRI_DIR}/aparc.a2009s+aseg.mgz ${MRI_DIR}/aparc.a2009s+aseg_TEST.mgz
+# rm -rf ${OUTPUT_DIR}/${SUBJECT_ID}/scripts
+# rm -rf ${OUTPUT_DIR}/${SUBJECT_ID}/tmp
+
+if [[ ${THALAMUS} == "True" ]]; then
     # Check if this is infant, if so, modify aseg.mgz
     if [[ ! -f ${MRI_DIR}/aparc.a2009s+aseg.mgz  ]]; then
+        echo "$CONTAINER InfantFS detected, removing LD_LIBRARY_PATH and running fix_aseg_if_infant.py"
         export LD_LIBRARY_PATH=""
-
+        echo "$CONTAINER This is LD_LIBRARY_PATH: $LD_LIBRARY_PATH "
         # aseg is different, change it, required for Thalamic Segmentation
         ${FLYWHEEL_BASE}/fix_aseg_if_infant.py -mriDir ${MRI_DIR}
 
 
         export LD_LIBRARY_PATH=/opt/freesurfer/MCRv84/runtime/glnxa64:/opt/freesurfer/MCRv84/bin/glnxa64:/opt/freesurfer/MCRv84/sys/os/glnxa64:/opt/freesurfer/MCRv84/sys/java/jre/glnxa64/jre/lib/amd64/native_threads:/opt/freesurfer/MCRv84/sys/java/jre/glnxa64/jre/lib/amd64/server:/opt/freesurfer/MCRv84/sys/java/jre/glnxa64/jre/lib/amd64
     
+        echo "$CONTAINER This is LD_LIBRARY_PATH: $LD_LIBRARY_PATH "
 
+        echo "$CONTAONER Check if scripts and tmp directories exist in InfantFS"
+        if [[ ! -d ${OUTPUT_DIR}/${SUBJECT_ID}/scripts  ]]; then
+            mkdir ${OUTPUT_DIR}/${SUBJECT_ID}/scripts
+        fi
+        if [[ ! -d ${OUTPUT_DIR}/${SUBJECT_ID}/tmp  ]]; then
+            mkdir ${OUTPUT_DIR}/${SUBJECT_ID}/tmp
+        fi
     fi
 
 
